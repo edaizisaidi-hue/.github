@@ -1,48 +1,53 @@
-name: Advanced Auto Merge & Conflict Resolver
+name: OMEGA True Git-CLI Auto-Merge & Conflict Resolver
 on:
   pull_request:
     types: [labeled, synchronize, reopened, ready_for_review]
 
 jobs:
-  auto-merge-conflict-resolver:
+  true-cli-merge:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Repository
+      - name: Checkout Repository with Full History
         uses: actions/checkout@v4
-
-      - name: Attempt Auto-Merge with Conflict Strategies
-        uses: actions/github-script@v7
         with:
-          script: |
-            const pr = context.payload.pull_request;
-            const labels = pr.labels.map(l => l.name);
-            
-            if (!labels.includes('auto-merge')) {
-              console.log('PR does not have auto-merge label. Skipping.');
-              return;
-            }
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-            const owner = context.repo.owner;
-            const repo = context.repo.repo;
-            const pull_number = pr.number;
+      - name: Configure Git Identity
+        run: |
+          git config --global user.name "Omega-Sovereign-Bot"
+          git config --global user.email "bot@omega.sovereign"
 
-            try {
-              console.log(`Cubaan menggabungkan PR #${pull_number} secara standard...`);
-              await github.rest.pulls.merge({
-                owner: owner,
-                repo: repo,
-                pull_number: pull_number,
-                merge_method: 'merge'
-              });
-              console.log(`[+] PR #${pull_number} berjaya digabungkan.`);
-            } catch (error) {
-              console.log(`[-] Konflik dikesan pada PR #${pull_number}. Mengaktifkan protokol adaptif...`);
-              
-              // Menulis komen pemberitahuan konflik
-              await github.rest.issues.createComment({
-                owner: owner,
-                repo: repo,
-                issue_number: pull_number,
-                body: '[OMEGA-DAEMON] Konflik gabungan dikesan. Sila semak integriti kod atau lakukan rebase manual.'
-              });
+      - name: Attempt Git Merge / Rebase Resolution
+        run: |
+          PR_LABEL_CHECK="${{ contains(github.event.pull_request.labels.*.name, 'auto-merge') }}"
+          if [ "$PR_LABEL_CHECK" != "true" ]; then
+            echo "PR does not have 'auto-merge' label. Skipping."
+            exit 0
+          fi
+
+          BRANCH_NAME="${{ github.event.pull_request.head.ref }}"
+          BASE_BRANCH="${{ github.event.pull_request.base.ref }}"
+          
+          echo "Target Branch: $BRANCH_NAME into $BASE_BRANCH"
+          
+          git checkout "$BASE_BRANCH"
+          git pull origin "$BASE_BRANCH"
+          git checkout "$BRANCH_NAME"
+          git pull origin "$BRANCH_NAME"
+          
+          # Cuba lakukan merge dengan strategi theirs sebagai fallback konflik
+          git checkout "$BASE_BRANCH"
+          if git merge "$BRANCH_NAME" --no-ff -m "[OMEGA-AUTO-MERGE] Merging $BRANCH_NAME into $BASE_BRANCH"; then
+            echo "Merge berjaya tanpa konflik fizikal."
+            git push origin "$BASE_BRANCH"
+          else
+            echo "Konflik fizikal dikesan. Mengaktifkan penyelesaian automatik (-X theirs)..."
+            git merge --abort || true
+            git merge "$BRANCH_NAME" -X theirs --no-ff -m "[OMEGA-AUTO-MERGE-RESOLVED] Forced merge with -X theirs" || {
+              echo "Konflik terlalu rumit untuk diselesaikan secara automatik."
+              exit 1
             }
+            git push origin "$BASE_BRANCH"
+            echo "Konflik berjaya diselesaikan dan ditolak ke pelayan."
+          fi
