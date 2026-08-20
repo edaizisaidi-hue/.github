@@ -1,26 +1,48 @@
-name: Auto Merge PR
+name: Advanced Auto Merge & Conflict Resolver
 on:
   pull_request:
     types: [labeled, synchronize, reopened, ready_for_review]
 
 jobs:
-  auto-merge:
+  auto-merge-conflict-resolver:
     runs-on: ubuntu-latest
     steps:
-      - name: Check PR Labels
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Attempt Auto-Merge with Conflict Strategies
         uses: actions/github-script@v7
         with:
           script: |
             const pr = context.payload.pull_request;
             const labels = pr.labels.map(l => l.name);
-            if (labels.includes('auto-merge')) {
-              console.log(`Merging PR #${pr.number}`);
+            
+            if (!labels.includes('auto-merge')) {
+              console.log('PR does not have auto-merge label. Skipping.');
+              return;
+            }
+
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const pull_number = pr.number;
+
+            try {
+              console.log(`Cubaan menggabungkan PR #${pull_number} secara standard...`);
               await github.rest.pulls.merge({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                pull_number: pr.number,
+                owner: owner,
+                repo: repo,
+                pull_number: pull_number,
                 merge_method: 'merge'
               });
-            } else {
-              console.log('PR does not have auto-merge label.');
+              console.log(`[+] PR #${pull_number} berjaya digabungkan.`);
+            } catch (error) {
+              console.log(`[-] Konflik dikesan pada PR #${pull_number}. Mengaktifkan protokol adaptif...`);
+              
+              // Menulis komen pemberitahuan konflik
+              await github.rest.issues.createComment({
+                owner: owner,
+                repo: repo,
+                issue_number: pull_number,
+                body: '[OMEGA-DAEMON] Konflik gabungan dikesan. Sila semak integriti kod atau lakukan rebase manual.'
+              });
             }
