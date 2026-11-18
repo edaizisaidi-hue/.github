@@ -9,11 +9,19 @@ on:
 
 jobs:
   sustain:
-    runs-on:self-hosted OMEGA Sovereign Sustain Cycle Active"
+    name: OMEGA Sovereign Sustain Cycle
+    runs-on: self-hosted
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Sovereign Sustain Pulse
+        run: |
+          echo "=== OMEGA Sustain Cycle Active: $(date) ==="
           if [ -f "main.py" ]; then
-              python main.py
+              python3 main.py || echo "[!] main.py exited"
           elif [ -f "manager.py" ]; then
-              python manager.py
+              python3 manager.py || echo "[!] manager.py exited"
           else
               echo "Sistem beroperasi pada mod asas."
           fi
@@ -22,6 +30,6 @@ jobs:
         run: |
           git config --global user.name 'Sovereign-Architect-Adaptive'
           git config --global user.email 'architect@system.bot'
-          git add .
-          git commit -m "Adaptive sustain cycle: $(date)" || exit 0
+          git add . || true
+          git commit -m "Adaptive sustain cycle: $(date)" || true
           git push origin main || echo "[!] Push ditolak atau tiada perubahan."
