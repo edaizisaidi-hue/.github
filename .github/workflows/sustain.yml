@@ -9,7 +9,7 @@ on:
 
 jobs:
   sustain:
-    runs-on:ubuntu-latest OMEGA Sovereign Sustain Cycle Active"
+    runs-on:self-hosted OMEGA Sovereign Sustain Cycle Active"
           if [ -f "main.py" ]; then
               python main.py
           elif [ -f "manager.py" ]; then
