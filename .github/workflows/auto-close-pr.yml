@@ -7,4 +7,13 @@ on:
 jobs:
   check_pr:
     name: Check PR
-    runs-on:self-hosted
+    runs-on: self-hosted
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+      - name: Close PR
+        run: |
+          echo "PR ditutup secara automatik oleh Sovereign Sustain System."
+          gh pr close "${{ github.event.pull_request.number }}" --comment "Auto-closed by Sovereign Sentinel."
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
