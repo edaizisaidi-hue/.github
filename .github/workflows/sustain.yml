@@ -9,14 +9,7 @@ on:
 
 jobs:
   sustain:
-    runs-on: self-hosted
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Logik Adaptif Eksekusi Tempatan
-        run: |
-          echo "[$(date)] OMEGA Sovereign Sustain Cycle Active"
+    runs-on:ubuntu-latest OMEGA Sovereign Sustain Cycle Active"
           if [ -f "main.py" ]; then
               python main.py
           elif [ -f "manager.py" ]; then
