@@ -1,5 +1,6 @@
 name: OMEGA True Git-CLI Auto-Merge & Conflict Resolver
 on:
+  workflow_dispatch:
   pull_request:
     types: [labeled, synchronize, reopened, ready_for_review]
 
